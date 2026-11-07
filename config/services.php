@@ -28,6 +28,11 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'aiport' => [
+        'key' => env('AIPORT_API_KEY'),
+        'base_url' => env('AIPORT_BASE_URL', 'https://api.aiport.id/v1'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

@@ -16,7 +16,7 @@ class DraftPromptController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user() ?? $request->user('sanctum');
         $query = DraftPrompt::query()->with(['wisata', 'agensi']);
 
         if ($user && $user->isAgensi() && $user->agensi) {
@@ -34,7 +34,7 @@ class DraftPromptController extends Controller
 
         $drafts = $query->latest('timestamp')->get();
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'total' => $drafts->count(),
@@ -95,7 +95,7 @@ class DraftPromptController extends Controller
             'agensi_id' => $agensiId,
         ]);
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Draft prompt berhasil disimpan.',
@@ -113,7 +113,7 @@ class DraftPromptController extends Controller
     {
         $draftPrompt->load(['wisata', 'agensi']);
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'data' => $draftPrompt,
@@ -139,7 +139,7 @@ class DraftPromptController extends Controller
 
         $draftPrompt->delete();
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Draft prompt berhasil dihapus.',

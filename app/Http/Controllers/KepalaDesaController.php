@@ -35,7 +35,7 @@ class KepalaDesaController extends Controller
 
         $kadesList = $query->orderBy('status', 'desc')->orderBy('nama', 'asc')->get();
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'total' => $kadesList->count(),
@@ -173,7 +173,7 @@ class KepalaDesaController extends Controller
             return $newKades;
         });
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Kepala Desa berhasil didaftarkan dan diaktifkan.',

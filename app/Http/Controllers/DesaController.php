@@ -46,7 +46,7 @@ class DesaController extends Controller
             ->orderBy('kepala_desa.nama', 'asc')
             ->get();
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'total' => $desaList->count(),
@@ -175,7 +175,7 @@ class DesaController extends Controller
             return $desa;
         });
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Data desa & kepala desa berhasil disimpan.',
@@ -193,7 +193,7 @@ class DesaController extends Controller
     {
         $desa->load('kepalaDesa');
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'data' => $desa,
@@ -294,7 +294,7 @@ class DesaController extends Controller
             ]);
         });
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Desa & Kepala Desa berhasil diperbarui.',
@@ -318,7 +318,7 @@ class DesaController extends Controller
             $desa->delete();
         });
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Desa berhasil dihapus.',

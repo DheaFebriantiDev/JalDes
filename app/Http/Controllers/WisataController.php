@@ -21,7 +21,7 @@ class WisataController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user() ?? $request->user('sanctum');
         $query = Wisata::query()->with(['desa', 'agensi', 'kepalaDesa', 'draftPrompt']);
 
         // Filter berdasarkan role user
@@ -66,7 +66,7 @@ class WisataController extends Controller
 
         $wisataList = $query->latest()->get();
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'total' => $wisataList->count(),
@@ -113,6 +113,10 @@ class WisataController extends Controller
         $agensiId = $user->isAgensi() ? $user->agensi?->id : $request->input('agensi_id');
 
         if (! $agensiId) {
+            if ($this->wantsJson($request)) {
+                return response()->json(['success' => false, 'message' => 'Data profil agensi Anda belum terdaftar.', 'errors' => ['agensi_id' => ['Data profil agensi Anda belum terdaftar.']]], 422);
+            }
+
             return back()->withErrors(['agensi_id' => 'Data profil agensi Anda belum terdaftar.']);
         }
 
@@ -130,6 +134,10 @@ class WisataController extends Controller
         $desa = Desa::findOrFail($validated['kode_pos']);
 
         if (! $desa->nipd) {
+            if ($this->wantsJson($request)) {
+                return response()->json(['success' => false, 'message' => 'Desa yang dipilih belum memiliki Kepala Desa aktif untuk memverifikasi.', 'errors' => ['kode_pos' => ['Desa yang dipilih belum memiliki Kepala Desa aktif untuk memverifikasi.']]], 422);
+            }
+
             return back()->withErrors(['kode_pos' => 'Desa yang dipilih belum memiliki Kepala Desa aktif untuk memverifikasi.'])->withInput();
         }
 
@@ -146,7 +154,7 @@ class WisataController extends Controller
             'nipd' => $desa->nipd, // Kepala desa di desa tersebut
         ]);
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Objek wisata berhasil diajukan dan menunggu verifikasi Kepala Desa.',
@@ -164,7 +172,7 @@ class WisataController extends Controller
     {
         $wisata->load(['desa', 'agensi', 'kepalaDesa', 'draftPrompt']);
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'data' => $wisata,
@@ -228,7 +236,7 @@ class WisataController extends Controller
             'nipd' => $desa->nipd,
         ]);
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Objek wisata berhasil diperbarui.',
@@ -252,7 +260,7 @@ class WisataController extends Controller
 
         $wisata->delete();
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Objek wisata berhasil dihapus.',
@@ -292,7 +300,7 @@ class WisataController extends Controller
             null => 'dikembalikan ke status pending',
         };
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => "Wisata berhasil {$statusText}.",

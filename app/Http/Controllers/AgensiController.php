@@ -33,7 +33,7 @@ class AgensiController extends Controller
             ->paginate(10) // Pagination 10 data per halaman
             ->withQueryString(); // Mempertahankan query parameter search saat pindah halaman paginasi
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'data' => $agensi,
@@ -122,7 +122,7 @@ class AgensiController extends Controller
             ]);
 
             // Jika pendaftaran dilakukan oleh guest, otomatis login dengan akun user utama
-            if (! Auth::check() && count($createdUsers) > 0) {
+            if (! Auth::check() && count($createdUsers) > 0 && $request->hasSession()) {
                 Auth::login($createdUsers[0]);
                 $request->session()->regenerate();
             }
@@ -130,7 +130,7 @@ class AgensiController extends Controller
             return $agensi;
         });
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Agensi berhasil didaftarkan.',
@@ -155,7 +155,7 @@ class AgensiController extends Controller
     {
         $agensi->load(['user', 'wisata', 'draftPrompts']); // Load relasi untuk detail
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'data' => $agensi,
@@ -194,7 +194,7 @@ class AgensiController extends Controller
 
         $agensi->update($validated);
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Data Agensi berhasil diperbarui.',
@@ -213,7 +213,7 @@ class AgensiController extends Controller
     {
         $agensi->delete();
 
-        if ($request->wantsJson() || $request->query('format') === 'json') {
+        if ($this->wantsJson($request)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Data Agensi berhasil dihapus.',
