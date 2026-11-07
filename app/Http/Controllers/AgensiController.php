@@ -59,71 +59,46 @@ class AgensiController extends Controller
     }
 
     /**
-     * Menyimpan data agensi baru ke database.
-     * Algoritma:
-     * - Create agensi dianggap sebagai registrasi agensi.
-     * - Setiap user yang dibuat otomatis memiliki role 'agensi'.
-     * - Menerima sekurang-kurangnya 1 user (bisa lebih banyak dengan fitur tambah user dinamis).
-     * - User pertama menjadi akun utama yang dihubungkan ke agensi (user_id).
-     * - Jika pendaftar adalah guest, sistem langsung mengautentikasi (login) user utama.
+     * Menyimpan data agensi baru ke database (Registrasi Agensi).
+     * Aturan relasi: 1 User hanya memiliki 1 Agensi (1-to-1).
+     * Saat mendaftar agensi, dibuatkan 1 akun user dengan role otomatis 'agensi'.
      */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
-        // Validasi input agensi dan array users
+        // Validasi input agensi dan akun user (1 user = 1 agensi)
         $validated = $request->validate([
-            'nomor_telepon' => ['required', 'string', 'max:255'],
+            // Data Agensi
             'nama_agensi' => ['required', 'string', 'max:255'],
-            'deskripsi' => ['nullable', 'string'],
+            'nomor_telepon' => ['required', 'string', 'max:255'],
             'npwp' => ['nullable', 'string', 'unique:agensi,npwp'],
-            // Pilihan menghubungkan user yang sudah ada
-            'existing_user_id' => ['nullable', 'exists:users,id', 'unique:agensi,user_id'],
-            // Pilihan input user baru (minimal 1 user)
-            'users' => ['nullable', 'array', 'min:1'],
-            'users.*.username' => ['required_with:users', 'string', 'max:255', 'unique:users,username'],
-            'users.*.email' => ['required_with:users', 'email', 'max:255', 'unique:users,email'],
-            'users.*.password' => ['required_with:users', 'string', 'min:6'],
+            'deskripsi' => ['nullable', 'string'],
+            // Akun User Pemilik Agensi (1 user = 1 agensi)
+            'username' => ['required', 'string', 'max:255', 'unique:users,username'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6'],
         ]);
 
         $agensi = DB::transaction(function () use ($validated, $request) {
-            $primaryUserId = $validated['existing_user_id'] ?? null;
-            $createdUsers = [];
+            // 1. Buat 1 akun User dengan role otomatis 'agensi'
+            $user = User::create([
+                'username' => $validated['username'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => 'agensi',
+            ]);
 
-            // Jika ada isian pembuatan user baru
-            if (! empty($validated['users'])) {
-                foreach ($validated['users'] as $u) {
-                    $newUser = User::create([
-                        'username' => $u['username'],
-                        'email' => $u['email'],
-                        'password' => Hash::make($u['password']),
-                        'role' => 'agensi', // Auto role agensi
-                    ]);
-
-                    $createdUsers[] = $newUser;
-                }
-
-                // User pertama menjadi user_id utama agensi
-                if (! $primaryUserId && count($createdUsers) > 0) {
-                    $primaryUserId = $createdUsers[0]->id;
-                }
-            }
-
-            // Jika user_id masih belum ada, gunakan user yang sedang login (jika ada)
-            if (! $primaryUserId && Auth::check()) {
-                $primaryUserId = Auth::id();
-            }
-
-            // Simpan data agensi
+            // 2. Buat data Agensi yang berelasi 1-to-1 dengan user tersebut
             $agensi = Agensi::create([
                 'nomor_telepon' => $validated['nomor_telepon'],
                 'nama_agensi' => $validated['nama_agensi'],
                 'deskripsi' => $validated['deskripsi'] ?? null,
                 'npwp' => $validated['npwp'] ?? null,
-                'user_id' => $primaryUserId,
+                'user_id' => $user->id,
             ]);
 
-            // Jika pendaftaran dilakukan oleh guest, otomatis login dengan akun user utama
-            if (! Auth::check() && count($createdUsers) > 0) {
-                Auth::login($createdUsers[0]);
+            // 3. Jika pendaftar adalah guest, langsung login dengan akun user tersebut
+            if (! Auth::check()) {
+                Auth::login($user);
                 $request->session()->regenerate();
             }
 
@@ -138,14 +113,9 @@ class AgensiController extends Controller
             ], 201);
         }
 
-        // Jika pendaftar diarahkan ke dashboard
-        if (Auth::check()) {
-            return redirect()->route('dashboard')
-                ->with('success', "Selamat datang di JalDes! Agensi '{$agensi->nama_agensi}' berhasil didaftarkan.");
-        }
-
-        return redirect()->route('login')
-            ->with('success', 'Pendaftaran agensi berhasil. Silakan masuk dengan akun yang telah didaftarkan.');
+        // Arahkan ke dashboard agensi
+        return redirect()->route('dashboard')
+            ->with('success', "Selamat datang di JalDes! Agensi '{$agensi->nama_agensi}' berhasil didaftarkan.");
     }
 
     /**

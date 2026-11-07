@@ -12,9 +12,9 @@ return new class extends Migration
             $table->id();
             $table->string('nama_wisata');
             $table->string('jalan');
-            $table->string('video_promosi');
+            $table->string('video_promosi')->nullable();
             $table->string('gambar');
-            $table->string('video');
+            $table->string('video')->nullable();
             $table->text('deskripsi')->nullable();
             $table->boolean('status')->nullable();
 

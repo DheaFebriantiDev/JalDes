@@ -65,8 +65,29 @@
             <h3 style="margin-top: 0;">Media &amp; Verifikator</h3>
             <p><strong>Kepala Desa Verifikator:</strong> {{ $wisata->kepalaDesa?->nama ?? '-' }} (NIPD: {{ $wisata->nipd }})</p>
             <p><strong>Gambar Utama:</strong> <code>{{ $wisata->gambar }}</code></p>
-            <p><strong>Video Promosi:</strong> <code>{{ $wisata->video_promosi }}</code></p>
             <p><strong>Video Full:</strong> <code>{{ $wisata->video }}</code></p>
+
+            <div style="margin-top: 1rem;">
+                <strong>Video Promosi:</strong>
+                @if($wisata->video_promosi)
+                    @php
+                        $isExternalUrl = \Illuminate\Support\Str::startsWith($wisata->video_promosi, ['http://', 'https://']);
+                        $videoSrc = $isExternalUrl ? $wisata->video_promosi : asset('storage/' . $wisata->video_promosi);
+                    @endphp
+
+                    <div style="margin-top: 0.5rem;">
+                        <video controls class="w-full max-w-lg rounded-lg shadow-md" style="width: 100%; max-width: 480px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.1);">
+                            <source src="{{ $videoSrc }}" type="video/mp4">
+                            Browser Anda tidak mendukung tag video.
+                        </video>
+                        <div style="margin-top: 0.25rem; font-size: 0.8rem; color: #6b7280;">
+                            Sumber: <code>{{ $videoSrc }}</code>
+                        </div>
+                    </div>
+                @else
+                    <p class="text-gray-500" style="color: #6b7280; margin-top: 0.25rem;">Video promosi sedang diproses atau belum tersedia.</p>
+                @endif
+            </div>
         </div>
     </div>
 

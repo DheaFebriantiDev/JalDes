@@ -37,6 +37,7 @@
         pre { background: #111827; color: #d1fae5; padding: 1rem; border-radius: 6px; overflow: auto; max-height: 400px; font-size: 0.85rem; }
         .flex { display: flex; gap: 0.5rem; align-items: center; }
         .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -78,5 +79,6 @@
 
         @yield('content')
     </div>
+    @stack('scripts')
 </body>
 </html>

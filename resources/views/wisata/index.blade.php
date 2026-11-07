@@ -48,6 +48,7 @@
                 <th>Nama Wisata</th>
                 <th>Wilayah / Desa</th>
                 <th>Agensi</th>
+                <th>Video Promosi</th>
                 <th>Status Verifikasi</th>
                 <th>Kades Verifikator</th>
                 <th>Aksi</th>
@@ -69,6 +70,20 @@
                         @endif
                     </td>
                     <td>{{ $w->agensi?->nama_agensi ?? '-' }}</td>
+                    <td>
+                        @if($w->video_promosi)
+                            @php
+                                $isExternalUrl = \Illuminate\Support\Str::startsWith($w->video_promosi, ['http://', 'https://']);
+                                $videoSrc = $isExternalUrl ? $w->video_promosi : asset('storage/' . $w->video_promosi);
+                            @endphp
+                            <video controls class="w-full max-w-lg rounded-lg shadow-md" style="width: 200px; border-radius: 6px; display: block;">
+                                <source src="{{ $videoSrc }}" type="video/mp4">
+                                Browser Anda tidak mendukung tag video.
+                            </video>
+                        @else
+                            <p class="text-gray-500" style="font-size: 0.75rem; color: #6b7280; margin: 0;">Video promosi sedang diproses atau belum tersedia.</p>
+                        @endif
+                    </td>
                     <td>
                         @if(is_null($w->status))
                             <span class="badge badge-gray">Menunggu Verifikasi</span>
@@ -117,7 +132,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" style="text-align: center; color: #6b7280; padding: 2rem;">
+                    <td colspan="7" style="text-align: center; color: #6b7280; padding: 2rem;">
                         Tidak ada objek wisata yang ditemukan.
                     </td>
                 </tr>

@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'fal' => [
+        'key' => env('FAL_KEY'),
+    ],
+
+    'replicate' => [
+        'key' => env('REPLICATE_API_TOKEN'),
+    ],
+
 ];

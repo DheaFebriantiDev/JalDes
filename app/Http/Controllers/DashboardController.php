@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Desa;
 use App\Models\KepalaDesa;
+use App\Models\Wisata;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -25,18 +26,33 @@ class DashboardController extends Controller
 
         // 2. Role Kepala Desa
         if ($user->isKepalaDesa()) {
+            $kades = $user->kepalaDesa;
+            $desa = $kades?->desa;
+            $wisataPending = $kades ? Wisata::where('nipd', $kades->nipd)->whereNull('status')->count() : 0;
+            $wisataApproved = $kades ? Wisata::where('nipd', $kades->nipd)->where('status', true)->count() : 0;
+
             return view('dashboard.kd', [
                 'user' => $user,
-                'kepalaDesa' => $user->kepalaDesa,
+                'kepalaDesa' => $kades,
+                'desa' => $desa,
+                'wisataPending' => $wisataPending,
+                'wisataApproved' => $wisataApproved,
             ]);
         }
 
         // 3. Role Agensi: Seluruh data user + agensi (beserta wisata & draft prompt) ditampilkan sebagai JSON
-        $user->load('agensi.wisata', 'agensi.draftPrompts');
+        $user->load(['agensi.wisata.desa', 'agensi.wisata.draftPrompt', 'agensi.draftPrompts']);
+        $agensi = $user->agensi;
+        $wisataList = $agensi?->wisata ?? collect();
 
         return view('dashboard.agensi', [
             'user' => $user,
-            'agensi' => $user->agensi,
+            'agensi' => $agensi,
+            'wisataList' => $wisataList,
+            'totalWisata' => $wisataList->count(),
+            'wisataPending' => $wisataList->whereNull('status')->count(),
+            'wisataApproved' => $wisataList->where('status', true)->count(),
+            'wisataRejected' => $wisataList->where('status', false)->count(),
             'json' => $user->toArray(),
         ]);
     }

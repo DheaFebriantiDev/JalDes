@@ -21,7 +21,7 @@ Route::middleware(['auth', 'kd.active'])->group(function () {
     Route::resource('agensi', AgensiController::class)->except(['create', 'store']);
 
     // Modul Wisata & Sistem Verifikasi oleh Kepala Desa
-    Route::resource('wisata', WisataController::class);
+    Route::resource('wisata', WisataController::class)->parameters(['wisata' => 'wisata']);
     Route::post('/wisata/{wisata}/verifikasi', [WisataController::class, 'verifikasi'])->name('wisata.verifikasi');
 
     // Modul Draft Prompt Promosi AI

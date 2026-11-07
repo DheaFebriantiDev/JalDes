@@ -13,13 +13,9 @@ test('guest can register agensi with single user and is automatically logged in 
         'nomor_telepon' => '0812345678',
         'npwp' => '12.345.678.9-001.000',
         'deskripsi' => 'Agensi tur alam.',
-        'users' => [
-            [
-                'username' => 'owner_pesona',
-                'email' => 'owner@pesona.com',
-                'password' => 'secret123',
-            ],
-        ],
+        'username' => 'owner_pesona',
+        'email' => 'owner@pesona.com',
+        'password' => 'secret123',
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -36,42 +32,6 @@ test('guest can register agensi with single user and is automatically logged in 
     $this->assertAuthenticatedAs($user);
 });
 
-test('guest can register agensi with multiple users automatically', function () {
-    $response = $this->post('/register-agensi', [
-        'nama_agensi' => 'Nusantara Travel',
-        'nomor_telepon' => '0819876543',
-        'users' => [
-            [
-                'username' => 'nusantara_admin',
-                'email' => 'admin@nusantara.com',
-                'password' => 'secret123',
-            ],
-            [
-                'username' => 'nusantara_staff1',
-                'email' => 'staff1@nusantara.com',
-                'password' => 'secret123',
-            ],
-            [
-                'username' => 'nusantara_staff2',
-                'email' => 'staff2@nusantara.com',
-                'password' => 'secret123',
-            ],
-        ],
-    ]);
-
-    $response->assertRedirect(route('dashboard'));
-
-    // Pastikan ketiga user tersimpan dengan role agensi
-    expect(User::where('username', 'nusantara_admin')->first()?->role)->toBe('agensi');
-    expect(User::where('username', 'nusantara_staff1')->first()?->role)->toBe('agensi');
-    expect(User::where('username', 'nusantara_staff2')->first()?->role)->toBe('agensi');
-
-    // User pertama adalah penanggung jawab agensi
-    $primaryUser = User::where('username', 'nusantara_admin')->first();
-    $agensi = Agensi::where('nama_agensi', 'Nusantara Travel')->first();
-    expect($agensi->user_id)->toBe($primaryUser->id);
-});
-
 test('authenticated user can view agensi list and search', function () {
     $user = User::factory()->create(['role' => 'agensi']);
     Agensi::create([
@@ -85,4 +45,3 @@ test('authenticated user can view agensi list and search', function () {
     $response->assertOk()
         ->assertSee('Ciwidey Adventure');
 });
-
