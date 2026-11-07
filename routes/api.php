@@ -25,6 +25,9 @@ Route::get('/draft-prompt', [DraftPromptController::class, 'index']);
 Route::get('/draft-prompt/{draftPrompt}', [DraftPromptController::class, 'show']);
 Route::post('/draft-prompt', [DraftPromptController::class, 'store']);
 
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
 // Endpoint API Desa & Kepala Desa: dilindungi permission admin
 Route::middleware(['auth:sanctum', 'role.admin'])->group(function () {
     Route::apiResource('desa', DesaController::class);
