@@ -9,7 +9,14 @@ class DraftPrompt extends Model
 {
     protected $table = 'draft_prompt';
 
-    protected $fillable = ['timestamp', 'prompt_message', 'wisata_id', 'agensi_id'];
+    protected $fillable = [
+        'timestamp',
+        'prompt_message',
+        'wisata_id',
+        'agensi_id',
+        'job_id',
+        'job_status',
+    ];
 
     protected function casts(): array
     {
@@ -28,4 +35,3 @@ class DraftPrompt extends Model
         return $this->belongsTo(Agensi::class, 'agensi_id', 'id');
     }
 }
-

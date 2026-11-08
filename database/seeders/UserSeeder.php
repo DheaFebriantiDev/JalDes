@@ -21,6 +21,7 @@ class UserSeeder extends Seeder
             ['kd_ujang', 'kd.ujang@example.com', 'kd'],
             ['kd_asep', 'kd.asep@example.com', 'kd'],
             ['kd_dedi', 'kd.dedi@example.com', 'kd'],
+            ['kd_cecep', 'kd.cecep@example.com', 'kd'],
         ];
 
         foreach ($rows as [$username, $email, $role]) {

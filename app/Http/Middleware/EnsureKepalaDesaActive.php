@@ -17,6 +17,15 @@ class EnsureKepalaDesaActive
         $user = $request->user();
 
         if ($user && $user->isKepalaDesa() && ! $user->kepalaDesa?->status) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                $user->currentAccessToken()?->delete();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun kepala desa tidak aktif (sudah tidak menjabat).',
+                ], 403);
+            }
+
             Auth::guard('web')->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

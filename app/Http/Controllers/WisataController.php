@@ -116,7 +116,13 @@ class WisataController extends Controller
 
         $agensiId = $user->isAgensi() ? $user->agensi?->id : $request->input('agensi_id');
 
+        $isJson = $request->wantsJson() || $request->query('format') === 'json' || $request->is('api/*');
+
         if (! $agensiId) {
+            if ($isJson) {
+                return response()->json(['success' => false, 'message' => 'Data profil agensi Anda belum terdaftar.'], 422);
+            }
+
             return back()->withErrors(['agensi_id' => 'Data profil agensi Anda belum terdaftar.']);
         }
 
@@ -141,6 +147,10 @@ class WisataController extends Controller
         $desa = Desa::findOrFail($validated['kode_pos']);
 
         if (! $desa->nipd) {
+            if ($isJson) {
+                return response()->json(['success' => false, 'message' => 'Desa yang dipilih belum memiliki Kepala Desa aktif untuk memverifikasi.'], 422);
+            }
+
             return back()->withErrors(['kode_pos' => 'Desa yang dipilih belum memiliki Kepala Desa aktif untuk memverifikasi.'])->withInput();
         }
 

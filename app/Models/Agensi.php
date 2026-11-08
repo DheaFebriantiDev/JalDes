@@ -13,7 +13,7 @@ class Agensi extends Model
 
     protected $table = 'agensi';
 
-    protected $fillable = ['nomor_telepon', 'nama_agensi', 'deskripsi', 'npwp', 'user_id'];
+    protected $fillable = ['id', 'nomor_telepon', 'nama_agensi', 'deskripsi', 'npwp', 'user_id'];
 
     public function user(): BelongsTo
     {

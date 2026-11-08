@@ -97,7 +97,8 @@ class AgensiController extends Controller
             ]);
 
             // 3. Jika pendaftar adalah guest, langsung login dengan akun user tersebut
-            if (! Auth::check()) {
+            $isJson = $request->wantsJson() || $request->query('format') === 'json' || $request->is('api/*');
+            if (! $isJson && ! Auth::check()) {
                 Auth::login($user);
                 $request->session()->regenerate();
             }

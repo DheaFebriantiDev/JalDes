@@ -43,4 +43,8 @@ return [
         'key' => env('REPLICATE_API_TOKEN'),
     ],
 
+    'imagegpt' => [
+        'key' => env('IMAGEGPT_API_KEY'),
+    ],
+
 ];
