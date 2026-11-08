@@ -12,19 +12,11 @@ use Illuminate\View\View;
 
 class WisataController extends Controller
 {
-    /**
-     * Menampilkan daftar wisata.
-     * Disesuaikan berdasarkan role pengguna:
-     * - Agensi: Hanya melihat wisata miliknya.
-     * - Kepala Desa: Melihat wisata yang masuk untuk diverifikasi di wilayah desanya.
-     * - Admin / Publik: Melihat semua wisata atau yang sudah terverifikasi.
-     */
     public function index(Request $request): View|JsonResponse
     {
         $user = $request->user() ?? $request->user('sanctum');
         $query = Wisata::query()->with(['desa', 'agensi', 'kepalaDesa', 'draftPrompt']);
 
-        // Filter berdasarkan role user
         if ($user) {
             if ($user->isAgensi() && $user->agensi) {
                 $query->where('agensi_id', $user->agensi->id);
@@ -32,11 +24,9 @@ class WisataController extends Controller
                 $query->where('nipd', $user->kepalaDesa->nipd);
             }
         } elseif (! $request->has('all')) {
-            // Pengunjung umum hanya melihat wisata yang sudah disetujui
             $query->where('status', true);
         }
 
-        // Filter status
         if ($request->filled('status')) {
             $status = $request->query('status');
             if ($status === 'approved' || $status === '1') {
@@ -48,7 +38,6 @@ class WisataController extends Controller
             }
         }
 
-        // Filter search (nama wisata, jalan, kecamatan, desa, nama agensi)
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('nama_wisata', 'like', "%{$search}%")
@@ -82,30 +71,19 @@ class WisataController extends Controller
         ]);
     }
 
-    /**
-     * Form tambah wisata baru (hanya untuk agensi).
-     */
     public function create(Request $request): View|RedirectResponse
     {
         $user = $request->user();
-
         if (! $user->isAgensi() && ! $user->isAdmin()) {
             abort(403, 'Hanya akun agensi yang diizinkan menambahkan objek wisata.');
         }
-
-        // Ambil desa yang sudah memiliki kepala desa aktif
         $desaList = Desa::whereNotNull('nipd')->with('kepalaDesa')->orderBy('nama_desa', 'asc')->get();
-
         return view('wisata.create', compact('desaList'));
     }
 
-    /**
-     * Simpan objek wisata baru.
-     */
     public function store(Request $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-
         if (! $user->isAgensi() && ! $user->isAdmin()) {
             abort(403, 'Hanya akun agensi yang diizinkan menambahkan objek wisata.');
         }
@@ -114,9 +92,8 @@ class WisataController extends Controller
 
         if (! $agensiId) {
             if ($this->wantsJson($request)) {
-                return response()->json(['success' => false, 'message' => 'Data profil agensi Anda belum terdaftar.', 'errors' => ['agensi_id' => ['Data profil agensi Anda belum terdaftar.']]], 422);
+                return response()->json(['success' => false, 'message' => 'Data profil agensi Anda belum terdaftar.'], 422);
             }
-
             return back()->withErrors(['agensi_id' => 'Data profil agensi Anda belum terdaftar.']);
         }
 
@@ -128,17 +105,15 @@ class WisataController extends Controller
             'gambar' => ['required', 'string', 'max:255'],
             'video' => ['required', 'string', 'max:255'],
             'deskripsi' => ['nullable', 'string'],
+            'kategori' => ['nullable', 'string'],
         ]);
 
-        // Ambil data desa untuk mengaitkan kades verifikator di desa tersebut
         $desa = Desa::findOrFail($validated['kode_pos']);
-
         if (! $desa->nipd) {
             if ($this->wantsJson($request)) {
-                return response()->json(['success' => false, 'message' => 'Desa yang dipilih belum memiliki Kepala Desa aktif untuk memverifikasi.', 'errors' => ['kode_pos' => ['Desa yang dipilih belum memiliki Kepala Desa aktif untuk memverifikasi.']]], 422);
+                return response()->json(['success' => false, 'message' => 'Desa yang dipilih belum memiliki Kepala Desa aktif.'], 422);
             }
-
-            return back()->withErrors(['kode_pos' => 'Desa yang dipilih belum memiliki Kepala Desa aktif untuk memverifikasi.'])->withInput();
+            return back()->withErrors(['kode_pos' => 'Desa yang dipilih belum memiliki Kepala Desa aktif.'])->withInput();
         }
 
         $wisata = Wisata::create([
@@ -148,10 +123,11 @@ class WisataController extends Controller
             'gambar' => $validated['gambar'],
             'video' => $validated['video'],
             'deskripsi' => $validated['deskripsi'] ?? null,
-            'status' => null, // Default: Pending verifikasi
+            'kategori' => $validated['kategori'] ?? 'wisata',
+            'status' => null,
             'kode_pos' => $desa->kode_pos,
             'agensi_id' => $agensiId,
-            'nipd' => $desa->nipd, // Kepala desa di desa tersebut
+            'nipd' => $desa->nipd,
         ]);
 
         if ($this->wantsJson($request)) {
@@ -162,53 +138,31 @@ class WisataController extends Controller
             ], 201);
         }
 
-        return redirect()->route('wisata.index')->with('success', 'Objek wisata berhasil diajukan dan menunggu verifikasi Kepala Desa.');
+        return redirect()->route('wisata.index')->with('success', 'Objek wisata berhasil diajukan.');
     }
 
-    /**
-     * Detail objek wisata.
-     */
     public function show(Wisata $wisata, Request $request): View|JsonResponse
     {
         $wisata->load(['desa', 'agensi', 'kepalaDesa', 'draftPrompt']);
-
         if ($this->wantsJson($request)) {
-            return response()->json([
-                'success' => true,
-                'data' => $wisata,
-            ]);
+            return response()->json(['success' => true, 'data' => $wisata]);
         }
-
-        return view('wisata.show', [
-            'wisata' => $wisata,
-            'jsonData' => $wisata->toArray(),
-        ]);
+        return view('wisata.show', ['wisata' => $wisata, 'jsonData' => $wisata->toArray()]);
     }
 
-    /**
-     * Form edit objek wisata.
-     */
     public function edit(Wisata $wisata, Request $request): View
     {
         $user = $request->user();
-
-        // Hanya pemilik agensi atau admin yang boleh mengedit
         if (! $user->isAdmin() && (! $user->isAgensi() || $user->agensi?->id !== $wisata->agensi_id)) {
             abort(403, 'Anda tidak memiliki hak untuk mengedit wisata ini.');
         }
-
         $desaList = Desa::whereNotNull('nipd')->with('kepalaDesa')->orderBy('nama_desa', 'asc')->get();
-
         return view('wisata.edit', compact('wisata', 'desaList'));
     }
 
-    /**
-     * Perbarui data objek wisata.
-     */
     public function update(Request $request, Wisata $wisata): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-
         if (! $user->isAdmin() && (! $user->isAgensi() || $user->agensi?->id !== $wisata->agensi_id)) {
             abort(403, 'Anda tidak memiliki hak untuk mengedit wisata ini.');
         }
@@ -221,6 +175,7 @@ class WisataController extends Controller
             'gambar' => ['required', 'string', 'max:255'],
             'video' => ['required', 'string', 'max:255'],
             'deskripsi' => ['nullable', 'string'],
+            'kategori' => ['nullable', 'string'],
         ]);
 
         $desa = Desa::findOrFail($validated['kode_pos']);
@@ -232,6 +187,7 @@ class WisataController extends Controller
             'gambar' => $validated['gambar'],
             'video' => $validated['video'],
             'deskripsi' => $validated['deskripsi'] ?? null,
+            'kategori' => $validated['kategori'] ?? 'wisata',
             'kode_pos' => $desa->kode_pos,
             'nipd' => $desa->nipd,
         ]);
@@ -247,37 +203,23 @@ class WisataController extends Controller
         return redirect()->route('wisata.index')->with('success', 'Data wisata berhasil diperbarui.');
     }
 
-    /**
-     * Hapus objek wisata.
-     */
     public function destroy(Wisata $wisata, Request $request): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-
         if (! $user->isAdmin() && (! $user->isAgensi() || $user->agensi?->id !== $wisata->agensi_id)) {
             abort(403, 'Anda tidak memiliki hak untuk menghapus wisata ini.');
         }
-
         $wisata->delete();
 
         if ($this->wantsJson($request)) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Objek wisata berhasil dihapus.',
-            ]);
+            return response()->json(['success' => true, 'message' => 'Objek wisata berhasil dihapus.']);
         }
-
         return redirect()->route('wisata.index')->with('success', 'Objek wisata berhasil dihapus.');
     }
 
-    /**
-     * Verifikasi Objek Wisata oleh Kepala Desa.
-     * Hanya Kepala Desa yang wilayahnya mencakup objek wisata ini yang berhak memverifikasi.
-     */
     public function verifikasi(Request $request, Wisata $wisata): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-
         if (! $user->isKepalaDesa() || ! $user->kepalaDesa || $user->kepalaDesa->nipd !== $wisata->nipd) {
             abort(403, 'Hanya Kepala Desa penanggung jawab wilayah wisata ini yang berhak melakukan verifikasi.');
         }
@@ -311,4 +253,3 @@ class WisataController extends Controller
         return back()->with('success', "Objek wisata '{$wisata->nama_wisata}' berhasil {$statusText}.");
     }
 }
-
