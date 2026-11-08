@@ -11,15 +11,12 @@ use App\Http\Controllers\Api\AgensiRegisterController;
 use App\Http\Controllers\Api\KadesController;
 use App\Http\Controllers\Api\AdminRegisterController;
 
+// Cek User
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// ================= PUBLIK =================
-// Endpoint API Agensi (Publik)
-Route::get('/agensi', [AgensiController::class, 'index']);
-Route::get('/agensi/{agensi}', [AgensiController::class, 'show']);
-Route::post('/agensi', [AgensiController::class, 'store']);
+// ================= PUBLIK (Bisa diakses tanpa login) =================
 
 // Katalog wisata publik
 Route::get('/wisata', [WisataController::class, 'index']);
@@ -36,21 +33,28 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanc
 Route::post('/register', [AgensiRegisterController::class, 'register']);
 Route::post('/register-admin', [AdminRegisterController::class, 'register']);
 
-// ================= AUTHENTICATED (Agensi, Kades, Admin) =================
+
+// ================= AUTHENTICATED (Harus login, bebas role) =================
 Route::middleware(['auth:sanctum'])->group(function () {
-    // CRUD Wisata (PENTING: Dipindah ke sini biar Agensi bisa akses)
+    // Ambil data agensi (Buat Admin & Kades)
+    Route::get('/agensi', [AgensiController::class, 'index']);
+    Route::get('/agensi/{agensi}', [AgensiController::class, 'show']);
+
+    // CRUD Wisata (Agensi & Admin)
     Route::apiResource('wisata', WisataController::class)->except(['index', 'show']);
-    
-    // Route Verifikasi Wisata (Khusus Kades)
     Route::post('/wisata/{wisata}/verifikasi', [WisataController::class, 'verifikasi']);
     
     // CRUD Draft Prompt
     Route::apiResource('draft-prompt', DraftPromptController::class)->except(['index', 'show']);
 });
 
+
 // ================= ADMIN ONLY (Khusus Admin) =================
 Route::middleware(['auth:sanctum', 'role.admin'])->group(function () {
     Route::apiResource('desa', DesaController::class);
     Route::apiResource('kades', KadesController::class);
-    Route::apiResource('agensi', AgensiController::class)->except(['create', 'edit']);
+    
+    // Admin cuma butuh bisa Hapus/Edit Agensi, jadi kita pisahin
+    Route::put('/agensi/{agensi}', [AgensiController::class, 'update']);
+    Route::delete('/agensi/{agensi}', [AgensiController::class, 'destroy']);
 });
