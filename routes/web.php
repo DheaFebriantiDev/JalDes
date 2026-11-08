@@ -7,6 +7,7 @@ use App\Http\Controllers\DraftPromptController;
 use App\Http\Controllers\KepalaDesaController;
 use App\Http\Controllers\WisataController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController
 
 Route::redirect('/', '/login');
 
@@ -36,3 +37,14 @@ Route::middleware(['auth', 'role.admin'])->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+/*
+|--------------------------------------------------------------------------
+| Tangkap Sisa Route untuk Vue SPA (Katalog Wisata Publik / Pengunjung)
+|--------------------------------------------------------------------------
+| Menggunakan ->where('any', '^(?!api|login|register|dashboard|agensi|wisata|draft-prompt|desa|kepala-desa).*$')
+| memastikan route backend di atas TIDAK ikut terpotong oleh Vue Router.
+*/
+Route::get('{any}', function () {
+    return view('index'); // Mengarah ke file resources/views/index.blade.php
+})->where('any', '^(?!api|login|register|dashboard|agensi|wisata|draft-prompt|desa|kepala-desa).*$');
