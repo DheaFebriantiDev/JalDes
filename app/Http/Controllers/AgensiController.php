@@ -96,12 +96,6 @@ class AgensiController extends Controller
                 'user_id' => $user->id,
             ]);
 
-            // 3. Jika pendaftar adalah guest, langsung login dengan akun user tersebut
-            if (! Auth::check()) {
-                Auth::login($user);
-                $request->session()->regenerate();
-            }
-
             return $agensi;
         });
 
